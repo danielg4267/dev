@@ -1,0 +1,61 @@
+---
+title: "Practicum II: Part III"
+author: "Daniel Gonzalez"
+output: html_notebook
+---
+
+
+## Initial Setup
+```{r}
+library(RMySQL)
+db_user <- 'root'
+db_name <- ''
+db_password <- ''
+db_host <- 'localhost'
+db_port <- 3306
+authorfact_db <- dbConnect(MySQL(), user=db_user, password=db_password, dbname=db_name, host=db_host, port=db_port)
+result <- dbSendQuery(authorfact_db, "USE authorfact_db;")
+dbClearResult(result)
+```
+## Author Facts Analysis
+
+"Top ten authors with the most publications." Summing up the number of articles for every instance of an author's aid will provide the total number they have published across all dimensions of this star schema.
+
+```{sql connection=authorfact_db}
+
+SELECT aid, name, SUM(numPublications) AS totalPublications
+FROM authorFacts
+GROUP BY aid
+ORDER BY totalPublications DESC
+LIMIT 10
+
+
+```
+Switching databases for the journal facts.
+
+```{r}
+dbDisconnect(authorfact_db)
+journalfact_db <- dbConnect(MySQL(), user=db_user, password=db_password, dbname=db_name, host=db_host, port=db_port)
+result <- dbSendQuery(journalfact_db, "USE journalfact_db;")
+dbClearResult(result)
+
+```
+
+## Journal Facts Analysis
+
+"Top journal with the most articles per year." Each tuple in the journalFacts table already has the number of articles published in that journal for each year it was written, so finding the max, and then grabbing the year from the timeDim table (along with identifying info about the journal) will give the biggest article count, journal, and the year that it published all these articles.
+
+```{sql connection = journalfact_db}
+
+SELECT jid, issn, isoabbr, year, MAX(numArticlesPerYear) AS numArticles
+FROM journalFacts
+INNER JOIN timeDim
+ON timeDim.tid = journalFacts.tid
+
+```
+
+```{r}
+
+dbDisconnect(journalfact_db)
+
+```

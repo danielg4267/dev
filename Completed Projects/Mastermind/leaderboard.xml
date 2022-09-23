@@ -1,0 +1,103 @@
+<?xml version='1.0' encoding='us-ascii'?>
+<HighScores>
+	<GameMode Difficulty="Master">
+		<Player Session="D20220922T022136">
+			<Name>ProfessorX</Name>
+			<BaseScore>62</BaseScore>
+			<BonusPoints>20</BonusPoints>
+		</Player>
+		<Player Session="D20220922T022241">
+			<Name>LuckyB</Name>
+			<BaseScore>50</BaseScore>
+			<BonusPoints>20</BonusPoints>
+		</Player>
+		<Player Session="D20220922T021934">
+			<Name>MindMaster</Name>
+			<BaseScore>50</BaseScore>
+			<BonusPoints>0</BonusPoints>
+		</Player>
+		<Player Session="D20220922T022417">
+			<Name>Bean</Name>
+			<BaseScore>25</BaseScore>
+			<BonusPoints>12</BonusPoints>
+		</Player>
+	</GameMode>
+	<GameMode Difficulty="Hard">
+		<Player Session="D20220922T023318">
+			<Name>BB</Name>
+			<BaseScore>60</BaseScore>
+			<BonusPoints>10</BonusPoints>
+		</Player>
+		<Player Session="D20220922T023218">
+			<Name>Bean</Name>
+			<BaseScore>30</BaseScore>
+			<BonusPoints>12</BonusPoints>
+		</Player>
+		<Player Session="D20220922T023116">
+			<Name>Karl</Name>
+			<BaseScore>20</BaseScore>
+			<BonusPoints>8</BonusPoints>
+		</Player>
+	</GameMode>
+	<GameMode Difficulty="Normal">
+		<Player Session="D20220922T023812">
+			<Name>Mikhael</Name>
+			<BaseScore>67</BaseScore>
+			<BonusPoints>0</BonusPoints>
+		</Player>
+		<Player Session="D20220922T023653">
+			<Name>James</Name>
+			<BaseScore>50</BaseScore>
+			<BonusPoints>12</BonusPoints>
+		</Player>
+		<Player Session="D20220922T023420">
+			<Name>Oryn</Name>
+			<BaseScore>42</BaseScore>
+			<BonusPoints>8</BonusPoints>
+		</Player>
+		<Player Session="D20220922T023742">
+			<Name>MASTEROFTHEMIND</Name>
+			<BaseScore>33</BaseScore>
+			<BonusPoints>0</BonusPoints>
+		</Player>
+		<Player Session="D20220922T023533">
+			<Name>Munbo</Name>
+			<BaseScore>17</BaseScore>
+			<BonusPoints>10</BonusPoints>
+		</Player>
+		<Player Session="D20220922T023920">
+			<Name>Scoundrel</Name>
+			<BaseScore>25</BaseScore>
+			<BonusPoints>0</BonusPoints>
+		</Player>
+	</GameMode>
+	<GameMode Difficulty="Easy">
+		<Player Session="D20220922T024224">
+			<Name>MinnieTheGremlin</Name>
+			<BaseScore>57</BaseScore>
+			<BonusPoints>8</BonusPoints>
+		</Player>
+		<Player Session="D20220922T024019">
+			<Name>CurbStomper29</Name>
+			<BaseScore>50</BaseScore>
+			<BonusPoints>4</BonusPoints>
+		</Player>
+		<Player Session="D20220922T024135">
+			<Name>grapeboi</Name>
+			<BaseScore>43</BaseScore>
+			<BonusPoints>8</BonusPoints>
+		</Player>
+		<Player Session="D20220922T024342">
+			<Name>bean2</Name>
+			<BaseScore>29</BaseScore>
+			<BonusPoints>14</BonusPoints>
+		</Player>
+	</GameMode>
+	<GameMode Difficulty="Beginner">
+		<Player Session="D20220922T024443">
+			<Name>CantTouchThis</Name>
+			<BaseScore>50</BaseScore>
+			<BonusPoints>0</BonusPoints>
+		</Player>
+	</GameMode>
+</HighScores>

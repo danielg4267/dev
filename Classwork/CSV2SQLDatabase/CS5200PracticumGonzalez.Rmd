@@ -1,0 +1,565 @@
+---
+title: "Practicum"
+author: "Daniel Gonzalez"
+output:
+  html_document:
+    df_print: paged
+---
+
+## Initial Setup
+
+To start, I load the libraries necessary for this database and data manipulation, set some options, and connect to the database.
+```{r}
+library(RMySQL)
+library(RSQLite)
+library(sqldf)
+
+```
+
+```{r}
+options(sqldf.driver="SQLite")
+
+```
+
+Note for grader: Here you can change whatever you need to connect to the database. For me, using an empty database name allowed me to connect and then I could CREATE and USE with no trouble.
+```{r}
+
+db_user <- 'root'
+db_password <- ''
+db_name <- ''
+db_host <- 'localhost'
+db_port <- 3306
+
+birdStrikesCon <- dbConnect(MySQL(), user=db_user, password=db_password, dbname=db_name, host=db_host, port=db_port)
+```
+
+Here I just make sure that the database I will be using does not exist, create a new one, and put it in use. This is more for my own sake, as I ran this a couple of times. The same goes for dropping the tables (because I don't necessarily want to create and recreate the schema every time!).
+```{sql connection = birdStrikesCon}
+DROP DATABASE IF EXISTS birdstrikes
+```
+
+```{sql connection = birdStrikesCon}
+CREATE DATABASE birdstrikes;
+```
+
+```{sql connection = birdStrikesCon}
+USE birdstrikes;
+```
+
+```{sql connection = birdStrikesCon}
+
+DROP TABLE IF EXISTS incidents
+
+```
+
+```{sql connection = birdStrikesCon}
+
+DROP TABLE IF EXISTS conditions
+
+```
+
+```{sql connection = birdStrikesCon}
+
+DROP TABLE IF EXISTS airports
+
+```
+
+# Creating the Database Schema
+
+Here I create the airports table. It contains all values specified in the assignment. The aid is an int that will autoincrement so it does not need to be generated outside of entry in the database. airportName is required to be unique, as there shouldn't be two "Logan Airport" entries with different ids. I gave it a maximum length of 64 characters as some names can be quite long! Ideally, the airportCode would be the primary key, but as that is not included in the data set, it is the only column to remain empty, and the only column allowed to be null. States are CHAR(2) since they don't need more than that, and the default is NA, which stands for N/A, as in, it does not exist. This will be used in place of null.
+```{sql connection = birdStrikesCon}
+
+CREATE TABLE airports(
+  aid INT NOT NULL AUTO_INCREMENT,
+  airportName VARCHAR(64) NOT NULL,
+  airportCode CHAR(3), 
+  state CHAR(2) NOT NULL DEFAULT 'NA',
+  PRIMARY KEY(aid),
+  UNIQUE(airportName)
+  
+);
+
+```
+
+Next I create the conditions table. Its primary key works very similarly to the airport primary key, and the name of the condition (here it is named _condition because R and MySQL throw an error for using a keyword) is also unique, similar to airportName, however it is much smaller in its max size. Explanation is the only value allowed to be null, as it is an empty column for now. It is TEXT to allow for what I assume could be a paragraph or so of data.
+```{sql connection = birdStrikesCon}
+
+CREATE TABLE conditions(
+
+  cid INT NOT NULL AUTO_INCREMENT,
+  _condition VARCHAR(16) NOT NULL,
+  explanation TEXT,
+  PRIMARY KEY(cid),
+  UNIQUE(_condition)
+);
+
+
+```
+
+
+The incidents table is the most complex, and also references both airports and incidents so it needs to be referenced last. I will go through column by column.
+rid is the primary key of course, and it is an int. It does not autoincrement, as it is included in the data provided, and should already be generated.
+_date (again, avoiding using the exact keyword) cannot be null, if the value is null the default may provide some help, as it is set to the replacement value, which is the 0 date.
+origin is a foreign key which references the aid of the airports table. It cannot be null. By default, it is the first value in the airports table, which is the "UNKNOWN" airport.
+Airline, aircraft, and flightphase are all varchar of varying lengths as they are all very different expected values, and by default they are "UNKNOWN", so if the data doesn't exist it can be filled in easily. Because they have defaults for this, they should never be null.
+Altitude is similar to the previous three columns in that it has a default value that is logically invalid, and it cannot be null.
+conditions references the conditions table, by default it is the first value in that table, which is the "UNKNOWN" condition. And of course, this value cannot be null.
+Warning is a boolean that I have chosen to represent as a bit. 0 for false, 1 for true, and NULL for unknown, as it is one of the few places that NULL would be a good choice for an unknown value.
+Lastly, there is a check constraint for flight_phase to make sure it is one of the four values written there, as specified in the schema.
+```{sql connection = birdStrikesCon}
+
+CREATE TABLE incidents(
+  rid INT NOT NULL,
+  _date DATE DEFAULT '0000-00-00' NOT NULL,
+  origin INT DEFAULT 1 NOT NULL,
+  airline VARCHAR(32) DEFAULT 'UNKNOWN' NOT NULL,
+  aircraft VARCHAR(16) DEFAULT 'UNKNOWN' NOT NULL,
+  flightPhase VARCHAR(8) DEFAULT 'UNKNOWN' NOT NULL,
+  altitude INT DEFAULT -1 NOT NULL,
+  conditions INT DEFAULT 1 NOT NULL,
+  warning INT, -- 0=FALSE, 1=TRUE, NULL=unknown
+  PRIMARY KEY(rid),
+  FOREIGN KEY(conditions) REFERENCES conditions(cid),
+  FOREIGN KEY (origin) REFERENCES airports(aid),
+  CHECK (0 <= warning AND warning <= 1),
+  CHECK (flightPhase IN ('TAKEOFF', 'LANDING', 'INFLIGHT', 'UNKNOWN') )
+  
+);
+
+```
+
+## Reading and Formatting Data From a CSV File
+
+Now that the database schema has been created, I load the data in from the CSV file. Rather than use all the data provided, I select the columns relevant to the database and also filter out MILITARY flights as well, since there is no need for those. bsData now contains all the relevant info for the database, albeit in a raw and unfiltered state.
+```{r}
+
+birdStrikesCSV <- read.csv("BirdStrikesData-V2.csv", header=TRUE, stringsAsFactors=FALSE)
+
+bsData <- sqldf("SELECT rid, aircraft, airport, flight_date, airline, origin AS state, flight_phase, sky_conditions, pilot_warned_flag AS warning, altitude_ft AS altitude FROM birdStrikesCSV WHERE NOT airline='MILITARY'")
+
+```
+
+
+There are a number of things to change about this data. The date is in the wrong format, and also includes time, which we don't need. Warnings are Y/N while in the incidents table it requests a 1 or 0. So now I go about filtering and reformatting this data. I'll take it in small chunks.
+```{r}
+
+sqldf("SELECT * FROM bsData LIMIT 10")
+
+```
+To start, names of airports, airlines, aircrafts, and sky_conditions are all probably fine as they are, and would fit within the database constraints. However, for the sake of consistency, I will start the convention of data being completely uppercase. This way, we won't have "Logan Airport", "LOGAN AIRPORT", and "logan airport" all as separate values, when really they're referencing the same data. While at a glance, it appears airports are already uppercase, for the sake of consistency and caution, I call the toupper() function on it anyway. In addition, there are some airlines (US AIRWAYS*) that have random characters in them - at least for that column, I'll remove them.
+Lastly, there are many null values which the read() function returns as empty strings. While this is a valid entry in the database, this is not the default for any value that is unknown, and they certainly cannot be null. I will substitute them with the defaults defined earlier - 'UNKNOWN'.
+```{r}
+
+bsData$aircraft <- toupper(bsData$aircraft)
+bsData$aircraft[bsData$aircraft == ''] = 'UNKNOWN'
+
+bsData$airport <- toupper(bsData$airport)
+bsData$airport[bsData$airport == ''] = 'UNKNOWN'
+
+bsData$airline <- toupper(bsData$airline)
+bsData$airline[bsData$airline == ''] = 'UNKNOWN'
+bsData$airline <- gsub("[^[:alnum:] ]", "", bsData$airline)
+
+bsData$sky_conditions <- toupper(bsData$sky_conditions)
+bsData$sky_conditions[bsData$sky_conditions == ''] <- 'UNKNOWN'
+
+sqldf('SELECT aircraft, airport, airline, sky_conditions FROM bsData LIMIT 10')
+
+```
+
+Next is flight_date. These values are all in the wrong format, and from the select statement earlier, we can see they are all 'mm/dd/yyyy hh:mm:ss'. With that assumption in mind, the next few lines of code will convert it to 'yyyy-mm-dd'.
+```{r}
+
+#Remove everything after the space with an empty string (ie delete it) - now it should be in the format 'mm/dd/yyyy'
+bsData$flight_date<- sub(" .*", "", bsData$flight_date)
+#Change null values to the default 0 date. For now, it will be in the wrong format, since it will be fixed below anyway
+bsData$flight_date[bsData$flight_date==''] = '00/00/0000'
+#Capture group 1 is the beginning of the string, the second group is the last 4 digits (the year). Swap them - now it's 'yyyy/mm/dd/'
+bsData$flight_date <- sub("(.*?)(.{4}$)", "\\2/\\1", bsData$flight_date)
+#Replace slashes with dashes, don't include the final trailing '/' of the string. 
+bsData$flight_date <- gsub('/', '-', substr(bsData$flight_date, 0, nchar(bsData$flight_date)-1))
+sqldf('SELECT flight_date FROM bsData LIMIT 10')
+```
+
+Next is state. These values are all included in R's state data sets, and we can convert them pretty easily to their abbreviations, since the database requires only two characters. There will be many NA values for the empty strings, which the database again does not allow. These will also be converted to the default unknown value, 'NA'.
+```{r}
+
+bsData$state <- state.abb[match(bsData$state, state.name)]
+bsData$state[is.na(bsData$state)] <- 'NA'
+sqldf('SELECT state FROM bsData LIMIT 10')
+
+```
+
+flight_phase needs to be converted to one of the four values defined earlier. To do so, I need to see what the current values are in the database, and convert them accordingly, as there is no easy way to do it without knowing the inputted values.
+```{r}
+
+sqldf('SELECT DISTINCT flight_phase FROM bsData')
+
+```
+
+From there, I make my best judgment call on which of the four values these phases align with. And again, remove the empty string and make it the default 'UNKNOWN'. The 'INFLIGHT' default remains unused with the current data set.
+```{r}
+
+bsData$flight_phase[bsData$flight_phase == 'Climb' | bsData$flight_phase == 'Take-off run'] <- 'TAKEOFF'
+
+#Here I assume that it either just landed, or is about to take off. 
+#I thought it more accurate to consider it "preparing to takeoff" rather than "in the process of landing"
+bsData$flight_phase[bsData$flight_phase == 'Parked' | bsData$flight_phase == 'Taxi'] <- 'TAKEOFF' 
+
+bsData$flight_phase[bsData$flight_phase == 'Approach' | bsData$flight_phase == 'Landing Roll' | bsData$flight_phase == 'Descent'] <- 'LANDING'
+bsData$flight_phase[bsData$flight_phase == ''] <- 'UNKNOWN'
+
+sqldf('SELECT DISTINCT flight_phase FROM bsData')
+
+```
+
+Warning is one of the few values that can be null. Since it is a boolean being represented as a bit, null makes a perfect third option for unknown. Knowing that all warnings are represented with Y or N (or an empty string where there was no value) I can simply replace them with the proper values, and convert the column to an integer.
+```{r}
+
+bsData$warning[bsData$warning == 'Y'] <- 1
+bsData$warning[bsData$warning == 'N'] <- 0
+bsData$warning[bsData$warning == ''] <- NA
+bsData$warning <- as.integer(bsData$warning)
+
+sqldf('SELECT DISTINCT warning FROM bsData')
+
+```
+
+Lastly, altitude is currently a string and contains commas ('1,500'). Here I remove the commas, and set null/empty string values to -1, the default defined earlier in the database for unknown values. After that, I convert the whole thing to integers.
+```{r}
+
+bsData$altitude[bsData$altitude == ''] <- -1
+bsData$altitude<- sub(',', '', bsData$altitude)
+bsData$altitude <- as.integer(bsData$altitude)
+sqldf('SELECT altitude FROM bsData LIMIT 10')
+
+```
+
+Taking a look at all the data, it is now formatted correctly and it is ready for input into the database.
+```{r}
+
+sqldf('SELECT * FROM bsData LIMIT 10')
+
+```
+
+## Filling the Database with Data
+
+The next challenge is organizing this data properly for writing into the table. Incidents references the other two tables, so in this case it is better to fill those two tables first. Starting with airports, I'll select the relevant columns from the bsData dataframe, then use dbWriteTable() while allowing the defaults to take over filling in the empty values.
+It is important to note that since the state references the airport, and there are times where the state is known but the airport is not, there are multiple "UNKNOWN" airports with valid states. Rather than have so many, I have chosen to initially not include them, and then add in a sentinel airport whose name AND state are unknown. If the airport name is unknown, we can forget about figuring out where it was to begin with, and incidents will simply reference the one and only "UNKNOWN" airport.
+```{r}
+
+#To start, UNKNOWN will be the first airport
+dbSendQuery(birdStrikesCon, 'INSERT INTO airports(airportName, state) VALUES ("UNKNOWN", "NA");')
+
+#It is important that these values are distinct, because this is the data that will be referenced by the incidents table, and that is when the values can repeat.
+airportsData <- sqldf('SELECT DISTINCT airport, state FROM bsData WHERE NOT airport = "UNKNOWN"')
+
+#Insert all rows into the database - aid will autoincrement, and airportCod can be null
+for (row in 1:nrow(airportsData)){
+query = paste('INSERT INTO airports(airportName, state) VALUES("', airportsData$airport[row], '", "', airportsData$state[row], '");', sep='')
+dbSendQuery(birdStrikesCon, query)
+}
+
+
+```
+
+At this point, we can see that the airports table is full of all the data obtained from the CSV file.
+```{sql connection = birdStrikesCon}
+
+SELECT * FROM airports LIMIT 10;
+
+```
+
+Now the same will be done for the conditions table as well. Select the columns needed, and then insert them into the database, allowing the primary key to autoincrement.
+
+
+```{r}
+
+#I don't necessarily want the unknown here, because I want to make sure it is the first value inserted in the database to match the default in the incidents table
+sky_conditionsData <- sqldf("SELECT DISTINCT sky_conditions FROM bsData WHERE NOT sky_conditions = 'UNKNOWN'")
+dbSendQuery(birdStrikesCon, "INSERT INTO conditions(_condition) VALUES('UNKNOWN')")
+
+for (row in 1:nrow(sky_conditionsData)){
+query = paste('INSERT INTO conditions(_condition) VALUES("', sky_conditionsData$sky_conditions[row], '");', sep='')
+dbSendQuery(birdStrikesCon, query)
+}
+
+```
+
+```{sql connection = birdStrikesCon}
+
+SELECT * FROM conditions LIMIT 10;
+
+```
+From here, we can insert into the incidents table. However, there is A LOT of data, and we actually already have ALL the fields necessary for the incidents table - it would be wasteful to use a for-loop here, as dbWriteTable() can do all the work if given the right dataframe. And here is where the formatting from before really comes in handy!
+  
+```{r}
+
+incidentsData <- sqldf("SELECT rid, flight_date as _date, airport, airline, aircraft, flight_phase as flightPhase, altitude, sky_conditions, warning FROM bsData")
+
+```
+
+However, origin(airport) and sky_conditions need to reference the tables with their aid and cid values, respecitvely. So a join will be necessary.
+
+```{r}
+
+airports <- dbGetQuery(birdStrikesCon, "SELECT aid, airportName FROM airports")
+conditions <- dbGetQuery(birdStrikesCon, "SELECT cid, _condition FROM conditions")
+
+incidents <- sqldf("SELECT rid, _date, aid as origin, airline, aircraft, flightPhase, altitude, cid as conditions, warning FROM incidentsData
+      INNER JOIN airports ON (airport=airportName)
+      INNER JOIN conditions ON (sky_conditions=_condition)")
+dbWriteTable(conn=birdStrikesCon, name="incidents", value=incidents, overwrite=FALSE, append=TRUE, row.names=FALSE)
+
+```
+
+And now the last table is filled, and we can begin analysis of the data:
+```{sql connection = birdStrikesCon}
+
+SELECT * FROM incidents LIMIT 10;
+
+```
+## SQL Queries on the Database
+
+Create a SQL query against your database to find the top-10 airlines with the most number of incidents. You may either use a {sql} code chunk or an R function to execute the query. It must be a single query.
+```{sql connection = birdStrikesCon}
+
+SELECT airline AS Airline, COUNT(*) AS Num_Incidents
+FROM incidents
+GROUP BY Airline
+ORDER BY Num_Incidents DESC
+LIMIT 10;
+
+```
+
+Create a SQL query against your database to find the flight phase that had an above average number bird strike incidents (during any flight phase). You may either use a {sql} code chunk or an R function to execute the query. It must be a single query. 
+```{sql connection = birdStrikesCon}
+
+SELECT flightPhase, Num_Incidents
+FROM
+  (
+  SELECT flightPhase, COUNT(*) AS Num_Incidents
+  FROM incidents
+  GROUP BY flightPhase
+  ) AS phaseincidents
+WHERE Num_Incidents > 
+  (SELECT AVG(numincidents) 
+    FROM (
+      SELECT COUNT(*) as numincidents
+      FROM incidents
+      GROUP BY flightPhase
+      ) AS phaseIncidents_2
+    ) 
+  
+```
+
+Create a SQL query against your database to find the maximum number of bird strike incidents by month (across all years). Include all airlines and all flights. You may either use a {sql} code chunk or an R function to execute the query. It must be a single query. This query can help answer the question which month, historically, is the most dangerous for bird strikes.
+```{sql connection = birdStrikesCon}
+
+SELECT EXTRACT(MONTH FROM _date) AS Month, COUNT(*) AS Num_Incidents
+FROM incidents
+GROUP BY Month
+ORDER BY Num_Incidents DESC
+LIMIT 1;
+
+```
+Build a column chart that visualizes the number of bird strikes incidents per year from 2005 to 2011. Adorn the graph with appropriate axis labels, titles, legend, data labels, etc.
+```{r}
+
+yearlyIncidents <- dbGetQuery(birdStrikesCon, 
+"SELECT EXTRACT(YEAR FROM _date) AS Year, COUNT(*) AS Num_Incidents
+FROM incidents
+GROUP BY Year
+ORDER BY Year ASC")
+
+#This actually turned out to be easier to do outside of the original SQL query, since I can treat years as integers
+yearlyIncidents <- sqldf('SELECT * FROM yearlyIncidents WHERE Year >= 2005 AND Year <= 2011')
+
+
+barplot(yearlyIncidents$Num_Incidents, 
+        yearlyIncidents$Year, 
+        names.arg = as.character(yearlyIncidents$Year), 
+        main = 'Total Bird Strikes',
+        col = 'darkblue',
+        xlab = 'Year',
+        ylab = 'Number of Bird Strikes')
+
+```
+## An Insert-Based Stored Procedure
+
+This stored procedure exists to quickly insert an incident into the table, given you know the airport name and the weather conditions (thus you can avoid using a join and trying to reference it yourself). I left out other values of the incidents table other than date, since this is sort of a way for the user to quickly add something to the database - ie not a ton of info to go on, not sure if the airport and condition exist in the database yet, not sure about the other fields - but it happened, and you want to add it to include in the data easily. Alternatively, a stored procedure that included the other columns of the incident table wouldn't change the logic much, as the meat of this is about checking values in airports and conditions tables.
+
+So the IF-statement checks whether the airport/condition don't exist yet first, and inserts them if not. This gives them an aid/cid that can be referenced by the incidents table. Then it inserts into the incidents table, with the proper references (LIMIT 1 just in case for whatever reason it is found more than once). I wanted to do something that involved all 3 tables, as that was the most interesting to me. I also hadn't used IF-statements yet, and thought it a good time to try it! 
+
+Lastly, just in case you have for some reason used the same rid as another entry, it will update that entry, rather than insert a new one.
+
+```{sql connection = birdStrikesCon}
+DROP PROCEDURE IF EXISTS QuickInsertIncident;
+
+```
+
+```{sql connection = birdStrikesCon}
+
+CREATE PROCEDURE QuickInsertIncident(
+IN inc_rid INT,
+IN inc_date DATE,
+IN inc_airportName VARCHAR(64),
+IN inc_condition VARCHAR(16)
+)
+
+BEGIN
+  IF NOT EXISTS 
+    (SELECT aid FROM airports WHERE airportName = UPPER(inc_airportName)) 
+  AND NOT EXISTS 
+    (SELECT cid FROM conditions WHERE _condition = UPPER(inc_condition))
+  THEN 
+    INSERT INTO conditions (_condition) VALUES (UPPER(inc_condition));
+    INSERT INTO airports (airportName) VALUES (UPPER(inc_airportName));
+
+  ELSEIF NOT EXISTS
+    (SELECT aid FROM airports WHERE airportName = UPPER(inc_airportName)) 
+  AND EXISTS 
+    (SELECT cid FROM conditions WHERE _condition = UPPER(inc_condition))
+  THEN 
+    INSERT INTO airports (airportName) VALUES (UPPER(inc_airportName));
+
+  ELSEIF EXISTS
+    (SELECT aid FROM airports WHERE airportName = UPPER(inc_airportName)) 
+  AND NOT EXISTS 
+    (SELECT cid FROM conditions WHERE _condition = UPPER(inc_condition))
+  THEN 
+    INSERT INTO conditions (_condition) VALUES (UPPER(inc_condition));
+END IF;
+
+INSERT INTO incidents(rid, _date, origin, conditions)
+VALUES (inc_rid, 
+        inc_date, 
+        (SELECT aid FROM airports WHERE airportName = UPPER(inc_airportName) LIMIT 1),
+        (SELECT cid FROM conditions WHERE _condition = UPPER(inc_condition) LIMIT 1))
+ON DUPLICATE KEY 
+  UPDATE _date=inc_date, 
+         origin=(SELECT aid FROM airports WHERE airportName = UPPER(inc_airportName) LIMIT 1),
+         conditions=(SELECT cid FROM conditions WHERE _condition = UPPER(inc_condition) LIMIT 1);
+
+END;
+
+```
+
+Because this procedure has quite a few different branches, I'll demonstrate it a few times. I'll go in order of the IF-statements. I will make very obviously strange and unique inputs for the sake of easily finding them and seeing all the data. The first case adds a new airport AND a new condition if neither exists in the database yet.
+
+```{sql connection = birdStrikesCon}
+CALL QuickInsertIncident(-1, CURRENT_DATE, 'DBMS Airport', 'TerribleWeather')
+
+```
+
+There should be a new entry in every single table - a new incident with an rid -1, referencing the new "DBMS AIRPORT", with "TERRIBLEWEATHER" conditions. I'll do a join on all 3 to demonstrate. 
+```{sql connection = birdStrikesCon}
+
+SELECT * 
+FROM incidents
+INNER JOIN airports
+ON (aid=origin)
+INNER JOIN conditions
+ON (cid=incidents.conditions)
+WHERE rid = -1;
+
+```
+
+The database schema takes care of a lot of the values, implementing defaults and generating an aid and cid for the new entries. However it can be seen with this entry that these are all properly referenced. So next, I'll do an insert where the airport does not exist, but the condition already does. Again, it will be a new rid.
+
+```{sql connection = birdStrikesCon}
+
+CALL QuickInsertIncident(-2, CURRENT_DATE, 'NEU Airport', 'TerribleWeather')
+
+```
+
+```{sql connection = birdStrikesCon}
+
+SELECT * 
+FROM incidents
+INNER JOIN airports
+ON (aid=origin)
+INNER JOIN conditions
+ON (cid=incidents.conditions)
+WHERE rid = -2;
+
+```
+
+It's important to see that a new condition was not added, instead the condition was already found and referenced properly. The same is true for the next branch, where the airport exists, but the condition does not:
+
+```{sql connection = birdStrikesCon}
+
+CALL QuickInsertIncident(-3, CURRENT_DATE, 'NEU Airport', 'BeautifulWeather')
+
+```
+
+```{sql connection = birdStrikesCon}
+
+SELECT * 
+FROM incidents
+INNER JOIN airports
+ON (aid=origin)
+INNER JOIN conditions
+ON (cid=incidents.conditions)
+WHERE rid = -3;
+
+```
+
+Lastly, I added duplicate key behavior for the incidents table upon insert. Rather than create a new entry or attempt to get a different rid, it just updates the entry with that rid. So I will update the last entry we've made (rid = -3) with a new airport and weather conditions.
+
+```{sql connection = birdStrikesCon}
+
+CALL QuickInsertIncident(-3, '0000-00-00', 'SQL Airport', 'VeryOkayWeather')
+
+```
+
+```{sql connection = birdStrikesCon}
+
+SELECT * 
+FROM incidents
+INNER JOIN airports
+ON (aid=origin)
+INNER JOIN conditions
+ON (cid=incidents.conditions)
+WHERE rid = -3;
+
+```
+
+
+I also wanted to demonstrate these entries in the database against the actual entries. Knowing that I chose negative rids, I ordered the selection by ascending order for the incidents table. Descending order for the airports and conditions table, since their ids are autoincremented with every entry. 
+
+```{sql connection = birdStrikesCon}
+
+SELECT * 
+FROM incidents 
+ORDER BY rid ASC
+LIMIT 10;
+
+```
+
+```{sql connection = birdStrikesCon}
+
+SELECT * 
+FROM airports 
+ORDER BY aid DESC
+LIMIT 10;
+
+```
+
+```{sql connection = birdStrikesCon}
+
+SELECT * 
+FROM conditions 
+ORDER BY cid DESC
+LIMIT 10;
+
+```
+
+
+And now I'm done! Thank you for reading. :)
+
+```{r}
+
+dbDisconnect(birdStrikesCon)
+
+```

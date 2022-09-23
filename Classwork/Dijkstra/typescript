@@ -1,0 +1,465 @@
+Script started on Sun 04 Jul 2021 01:56:51 PM EDT
+[?1034hbash-4.2$ make
+gcc  -o map lab6.o main.o
+bash-4.2$ ./map
+
+Please select an origin city
+Enter a number associated with one of the cities below:
+
+ 1 ---- Amsterdam
+ 2 ---- Belgrade
+ 3 ---- Berlin
+ 4 ---- Bern
+ 5 ---- Brussels
+ 6 ---- Budapest
+ 7 ---- Copenhagen
+ 8 ---- Genoa
+ 9 ---- Hamburg
+10 ---- Lisbon
+11 ---- Madrid
+12 ---- Munich
+13 ---- Naples
+14 ---- Paris
+15 ---- Prague
+16 ---- Rome
+17 ---- Trieste
+18 ---- Vienna
+19 ---- Warsaw
+ 0 ---- QUIT
+
+1
+
+Please select a destination city
+Enter a number associated with one of the cities below:
+
+ 1 ---- Belgrade
+ 2 ---- Berlin
+ 3 ---- Bern
+ 4 ---- Brussels
+ 5 ---- Budapest
+ 6 ---- Copenhagen
+ 7 ---- Genoa
+ 8 ---- Hamburg
+ 9 ---- Lisbon
+10 ---- Madrid
+11 ---- Munich
+12 ---- Naples
+13 ---- Paris
+14 ---- Prague
+15 ---- Rome
+16 ---- Trieste
+17 ---- Vienna
+18 ---- Warsaw
+ 0 ---- QUIT
+
+18
+
+
+ORIGIN: Amsterdam
+DESTINATION: Warsaw
+PATH LENGTH: 865
+PATH CITIES:
+Amsterdam
+Hamburg
+Berlin
+Warsaw
+
+
+Please select an origin city
+Enter a number associated with one of the cities below:
+
+ 1 ---- Amsterdam
+ 2 ---- Belgrade
+ 3 ---- Berlin
+ 4 ---- Bern
+ 5 ---- Brussels
+ 6 ---- Budapest
+ 7 ---- Copenhagen
+ 8 ---- Genoa
+ 9 ---- Hamburg
+10 ---- Lisbon
+11 ---- Madrid
+12 ---- Munich
+13 ---- Naples
+14 ---- Paris
+15 ---- Prague
+16 ---- Rome
+17 ---- Trieste
+18 ---- Vienna
+19 ---- Warsaw
+ 0 ---- QUIT
+
+9
+
+Please select a destination city
+Enter a number associated with one of the cities below:
+
+ 1 ---- Amsterdam
+ 2 ---- Belgrade
+ 3 ---- Berlin
+ 4 ---- Bern
+ 5 ---- Brussels
+ 6 ---- Budapest
+ 7 ---- Copenhagen
+ 8 ---- Genoa
+ 9 ---- Lisbon
+10 ---- Madrid
+11 ---- Munich
+12 ---- Naples
+13 ---- Paris
+14 ---- Prague
+15 ---- Rome
+16 ---- Trieste
+17 ---- Vienna
+18 ---- Warsaw
+ 0 ---- QUIT
+
+9
+
+
+ORIGIN: Hamburg
+DESTINATION: Lisbon
+PATH LENGTH: 1871
+PATH CITIES:
+Hamburg
+Amsterdam
+Brussels
+Paris
+Madrid
+Lisbon
+
+
+Please select an origin city
+Enter a number associated with one of the cities below:
+
+ 1 ---- Amsterdam
+ 2 ---- Belgrade
+ 3 ---- Berlin
+ 4 ---- Bern
+ 5 ---- Brussels
+ 6 ---- Budapest
+ 7 ---- Copenhagen
+ 8 ---- Genoa
+ 9 ---- Hamburg
+10 ---- Lisbon
+11 ---- Madrid
+12 ---- Munich
+13 ---- Naples
+14 ---- Paris
+15 ---- Prague
+16 ---- Rome
+17 ---- Trieste
+18 ---- Vienna
+19 ---- Warsaw
+ 0 ---- QUIT
+
+4
+
+Please select a destination city
+Enter a number associated with one of the cities below:
+
+ 1 ---- Amsterdam
+ 2 ---- Belgrade
+ 3 ---- Berlin
+ 4 ---- Brussels
+ 5 ---- Budapest
+ 6 ---- Copenhagen
+ 7 ---- Genoa
+ 8 ---- Hamburg
+ 9 ---- Lisbon
+10 ---- Madrid
+11 ---- Munich
+12 ---- Naples
+13 ---- Paris
+14 ---- Prague
+15 ---- Rome
+16 ---- Trieste
+17 ---- Vienna
+18 ---- Warsaw
+ 0 ---- QUIT
+
+3
+
+
+ORIGIN: Bern
+DESTINATION: Berlin
+PATH LENGTH: 704
+PATH CITIES:
+Bern
+Munich
+Prague
+Berlin
+
+
+Please select an origin city
+Enter a number associated with one of the cities below:
+
+ 1 ---- Amsterdam
+ 2 ---- Belgrade
+ 3 ---- Berlin
+ 4 ---- Bern
+ 5 ---- Brussels
+ 6 ---- Budapest
+ 7 ---- Copenhagen
+ 8 ---- Genoa
+ 9 ---- Hamburg
+10 ---- Lisbon
+11 ---- Madrid
+12 ---- Munich
+13 ---- Naples
+14 ---- Paris
+15 ---- Prague
+16 ---- Rome
+17 ---- Trieste
+18 ---- Vienna
+19 ---- Warsaw
+ 0 ---- QUIT
+
+10
+
+Please select a destination city
+Enter a number associated with one of the cities below:
+
+ 1 ---- Amsterdam
+ 2 ---- Belgrade
+ 3 ---- Berlin
+ 4 ---- Bern
+ 5 ---- Brussels
+ 6 ---- Budapest
+ 7 ---- Copenhagen
+ 8 ---- Genoa
+ 9 ---- Hamburg
+10 ---- Madrid
+11 ---- Munich
+12 ---- Naples
+13 ---- Paris
+14 ---- Prague
+15 ---- Rome
+16 ---- Trieste
+17 ---- Vienna
+18 ---- Warsaw
+ 0 ---- QUIT
+
+10
+
+
+ORIGIN: Lisbon
+DESTINATION: Madrid
+PATH LENGTH: 339
+PATH CITIES:
+Lisbon
+Madrid
+
+
+Please select an origin city
+Enter a number associated with one of the cities below:
+
+ 1 ---- Amsterdam
+ 2 ---- Belgrade
+ 3 ---- Berlin
+ 4 ---- Bern
+ 5 ---- Brussels
+ 6 ---- Budapest
+ 7 ---- Copenhagen
+ 8 ---- Genoa
+ 9 ---- Hamburg
+10 ---- Lisbon
+11 ---- Madrid
+12 ---- Munich
+13 ---- Naples
+14 ---- Paris
+15 ---- Prague
+16 ---- Rome
+17 ---- Trieste
+18 ---- Vienna
+19 ---- Warsaw
+ 0 ---- QUIT
+
+-1
+
+Please select an origin city
+Enter a number associated with one of the cities below:
+
+ 1 ---- Amsterdam
+ 2 ---- Belgrade
+ 3 ---- Berlin
+ 4 ---- Bern
+ 5 ---- Brussels
+ 6 ---- Budapest
+ 7 ---- Copenhagen
+ 8 ---- Genoa
+ 9 ---- Hamburg
+10 ---- Lisbon
+11 ---- Madrid
+12 ---- Munich
+13 ---- Naples
+14 ---- Paris
+15 ---- Prague
+16 ---- Rome
+17 ---- Trieste
+18 ---- Vienna
+19 ---- Warsaw
+ 0 ---- QUIT
+
+something
+
+Please select an origin city
+Enter a number associated with one of the cities below:
+
+ 1 ---- Amsterdam
+ 2 ---- Belgrade
+ 3 ---- Berlin
+ 4 ---- Bern
+ 5 ---- Brussels
+ 6 ---- Budapest
+ 7 ---- Copenhagen
+ 8 ---- Genoa
+ 9 ---- Hamburg
+10 ---- Lisbon
+11 ---- Madrid
+12 ---- Munich
+13 ---- Naples
+14 ---- Paris
+15 ---- Prague
+16 ---- Rome
+17 ---- Trieste
+18 ---- Vienna
+19 ---- Warsaw
+ 0 ---- QUIT
+
+Amsterdam
+
+Please select an origin city
+Enter a number associated with one of the cities below:
+
+ 1 ---- Amsterdam
+ 2 ---- Belgrade
+ 3 ---- Berlin
+ 4 ---- Bern
+ 5 ---- Brussels
+ 6 ---- Budapest
+ 7 ---- Copenhagen
+ 8 ---- Genoa
+ 9 ---- Hamburg
+10 ---- Lisbon
+11 ---- Madrid
+12 ---- Munich
+13 ---- Naples
+14 ---- Paris
+15 ---- Prague
+16 ---- Rome
+17 ---- Trieste
+18 ---- Vienna
+19 ---- Warsaw
+ 0 ---- QUIT
+
+20
+
+Please select an origin city
+Enter a number associated with one of the cities below:
+
+ 1 ---- Amsterdam
+ 2 ---- Belgrade
+ 3 ---- Berlin
+ 4 ---- Bern
+ 5 ---- Brussels
+ 6 ---- Budapest
+ 7 ---- Copenhagen
+ 8 ---- Genoa
+ 9 ---- Hamburg
+10 ---- Lisbon
+11 ---- Madrid
+12 ---- Munich
+13 ---- Naples
+14 ---- Paris
+15 ---- Prague
+16 ---- Rome
+17 ---- Trieste
+18 ---- Vienna
+19 ---- Warsaw
+ 0 ---- QUIT
+
+21
+
+Please select an origin city
+Enter a number associated with one of the cities below:
+
+ 1 ---- Amsterdam
+ 2 ---- Belgrade
+ 3 ---- Berlin
+ 4 ---- Bern
+ 5 ---- Brussels
+ 6 ---- Budapest
+ 7 ---- Copenhagen
+ 8 ---- Genoa
+ 9 ---- Hamburg
+10 ---- Lisbon
+11 ---- Madrid
+12 ---- Munich
+13 ---- Naples
+14 ---- Paris
+15 ---- Prague
+16 ---- Rome
+17 ---- Trieste
+18 ---- Vienna
+19 ---- Warsaw
+ 0 ---- QUIT
+
+QUIT
+
+Please select an origin city
+Enter a number associated with one of the cities below:
+
+ 1 ---- Amsterdam
+ 2 ---- Belgrade
+ 3 ---- Berlin
+ 4 ---- Bern
+ 5 ---- Brussels
+ 6 ---- Budapest
+ 7 ---- Copenhagen
+ 8 ---- Genoa
+ 9 ---- Hamburg
+10 ---- Lisbon
+11 ---- Madrid
+12 ---- Munich
+13 ---- Naples
+14 ---- Paris
+15 ---- Prague
+16 ---- Rome
+17 ---- Trieste
+18 ---- Vienna
+19 ---- Warsaw
+ 0 ---- QUIT
+
+Q
+
+Please select an origin city
+Enter a number associated with one of the cities below:
+
+ 1 ---- Amsterdam
+ 2 ---- Belgrade
+ 3 ---- Berlin
+ 4 ---- Bern
+ 5 ---- Brussels
+ 6 ---- Budapest
+ 7 ---- Copenhagen
+ 8 ---- Genoa
+ 9 ---- Hamburg
+10 ---- Lisbon
+11 ---- Madrid
+12 ---- Munich
+13 ---- Naples
+14 ---- Paris
+15 ---- Prague
+16 ---- Rome
+17 ---- Trieste
+18 ---- Vienna
+19 ---- Warsaw
+ 0 ---- QUIT
+
+0
+Exiting...
+bash-4.2$ exit
+exit
+
+Script done on Sun 04 Jul 2021 01:58:57 PM EDT
