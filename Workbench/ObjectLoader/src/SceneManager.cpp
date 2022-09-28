@@ -18,10 +18,10 @@ SceneManager::SceneManager(){
 	m_shaders.push_back(new Shader("./shaders/toonVert.glsl", "./shaders/toonFrag.glsl"));
 	m_shaders.push_back(new Shader("./shaders/basicVert.glsl", "./shaders/basicFrag.glsl"));
 
-	LoadObject("./../common/objects/bunny_centered.obj");
-	LoadObject("./../common/objects/windmill/windmill.obj");
-	LoadObject("./../common/objects/chapel/chapel_obj.obj");
-	LoadObject("./../common/objects/capsule/capsule.obj");
+	LoadObject("./common/objects/bunny_centered.obj");
+	LoadObject("./common/objects/windmill/windmill.obj");
+	LoadObject("./common/objects/chapel/chapel_obj.obj");
+	LoadObject("./common/objects/capsule/capsule.obj");
 	
 }
 
