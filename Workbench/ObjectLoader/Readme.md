@@ -6,16 +6,16 @@ This started out as a final project for my computer graphics class. I wanted to 
 
 "build.py" was written by my Computer Graphics professor at Northeastern University, Mike Shah, and everything in the "common" folder was provided by him. The folder simply contains libraries and example assets needed for this to run. I've included them all here, for easy download and use if you choose to run this program.
 
-Everything in "include", "shaders", and "src" is my own work.
+Just about everything in "include", "src", and "shaders" is my own work, save for the glad and KHR files.
 
 # TODO
 
-##Bugs
+## Bugs
 -Fix implementation of highlighted objects
 -Normal-mapped textures render incorrectly as the camera approaches
 -Objects with too many vertices load slowly
 
-##Features
+## Features
 -Open other .obj files
 -Open .obj files made with multiple pieces and textures
 -User defined lighting
