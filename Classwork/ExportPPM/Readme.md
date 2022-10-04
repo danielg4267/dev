@@ -5,7 +5,7 @@
 The assignment details are included in a separate markdown file. The assignment was essentially to use some prebuilt data structures for pixel data
 and learn about some of the more fine-grained details of displaying images, particularly triangles, given a screen with coordinates. It is the most basic you can get with computer graphics.
 
-Everything in "main.cpp" and the exported .ppm file is my own. Otherwise, it was included by my professor, Mike Shah.
+Everything in "main.cpp" under DrawLine() and the exported .ppm file is my own. Otherwise, it was included by my professor, Mike Shah.
 
 ## Why Include This?
 
