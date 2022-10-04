@@ -10,4 +10,4 @@ My final project of my first semester of the MSCS program was to recreate this g
 
 I had a lot of fun with this project. It was certainly my favorite for a while. I felt it had a lot of potential, and refactored it to have some extra features. Namely, it can export high scores in an organized manner (I chose an XML file) for human readability, and import those scores back into the database. In addition, I added a config file, that changes how the game is played and what it looks like (some of which provide bonus points!). I also have scores saved in a SQLite database, rather than a simple text file, for consitency's sake. Lastly, I added some inheritance, to reduce code repetition.
 
-Run the "Start.py" 
+Run the "Start.py" file to begin!
