@@ -30,8 +30,5 @@ public interface Node {
 	
 	public void setAbove(Node above);
 	
-	//TODO:
-	//find(int data) - find a NODE with the data, return it (easier to see "oh it's this node from this list")
-	//delete() - find, iterate to bottom of stack, delete, iterate up to top of stack
 
 }

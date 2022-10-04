@@ -29,22 +29,7 @@ public class Sentinel implements Node{
 	}
 	
 	public void delete() {
-		/*if(isHead) {
-			if(adjacent.isBigger(data)) {
-				if(below != null) {
-					below.delete(data);
-				}
-				else {
-					//do nothing
-				}
-			}
-			else {
-				adjacent.delete(data);
-			}
-		}
-		else {
-			//do nothing
-		}*/
+		//don't delete the sentinels...
 	}
 	
 	public int getData() {
@@ -156,12 +141,6 @@ public class Sentinel implements Node{
 	}
 	
 	public Sentinel findTop() {
-		/*if(this.above == null) {
-			return this;
-		}
-		else {
-			return this.above.findTop();
-		}*/
 		
 		
 		if(this.above == null) {

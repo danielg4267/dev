@@ -10,11 +10,9 @@ public class Main {
 		s.insert(4);
 		s.insert(2);
 		s.insert(3);
-		//s.insert(4);
 		s.print();
 		s.delete(4);
 		s.print();
-		//System.out.println(s.find(3));
 
 	}
 

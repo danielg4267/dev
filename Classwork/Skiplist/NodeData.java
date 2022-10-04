@@ -59,7 +59,7 @@ public class NodeData implements Node {
 	}
 	
 	public void delete() {
-		//System.out.println("Node: " + this.data + "Next=" + next.getData() + "Prev=" + this.prev.getData());
+
 		this.prev.setNext(next);
 		this.next.setPrev(prev);
 		if(this.below != null) {
@@ -70,33 +70,6 @@ public class NodeData implements Node {
 			this.above.setBelow(null);
 			this.above.delete();
 		}
-		/*
-		System.out.println("Node: " + this.data + "Next=" + next.getData() + "Prev=" + this.prev.getData());
-		if(this.data == data) {
-			this.prev.setNext(next);
-			this.next.setPrev(prev);
-			if(above != null) {
-				System.out.println("Made it");
-				this.above.setBelow(null);
-				this.above.delete(data);
-			}
-			if(below != null) {
-				this.below.setAbove(null);
-				this.below.delete(data);
-			}
-		}
-		else if(next.isBigger(data)){
-			if(below != null) {
-				below.delete(data);
-			}
-			else {
-				//do nothing,
-			}
-		}
-		else {
-			this.next.delete(data);
-		}
-		*/
 	}
 	
 	public int getData() {
@@ -181,15 +154,6 @@ public class NodeData implements Node {
 	}
 	
 	public void print() {
-		/*String s = "Node = " + data;
-		if(this.above != null) {
-			s += ("Above = " + above.getData());
-		}
-		if(this.below != null) {
-			s += ("Below = " + below.getData());
-		}
-		s += ("Next = " + next.getData());
-		System.out.println(s);*/
 		
 		System.out.print(data + "->");
 		this.next.print();
