@@ -1,0 +1,143 @@
+
+Malloc X (1024)
+
+PM_MALLOC() CALLED
+Memory requested:1024 bytes
+Pages needed for request:4
+Entry at offsets 0 0 enqueued.
+Entry at offsets 0 1 enqueued.
+Entry at offsets 0 2 enqueued.
+Evict page called, seeking page to evict.
+Offset 0 0 entry access = 1.
+Offset 0 2 entry access = 1.
+Offset 0 1 entry access = 1.
+Offset 0 0 entry access = 0.
+Entry at offsets 0 0 dequeued.
+ENTRY AT OFFSETS 0 0 WRITTEN TO DISK IN FILE ./.swap/0000.bin
+Entry at offsets 0 3 enqueued.
+Final 'pointer': 0 0 0 0
+
+Write to X (312)
+
+ACCESS PAGE AT ENTRY OFFSETS 0 0.
+Evict page called, seeking page to evict.
+Offset 0 1 entry access = 0.
+Entry at offsets 0 1 dequeued.
+ENTRY AT OFFSETS 0 1 WRITTEN TO DISK IN FILE ./.swap/0001.bin
+Entry at offsets 0 0 enqueued.
+ENTRY AT OFFSETS 0 0 READ FROM DISK IN FILE ./.swap/0000.bin
+
+Write to X+sizeof(int) (523)
+
+ACCESS PAGE AT ENTRY OFFSETS 0 0.
+
+Write to X+PAGE_SIZE (third X page) (432)
+
+ACCESS PAGE AT ENTRY OFFSETS 0 2.
+
+Malloc Z (2048)
+
+PM_MALLOC() CALLED
+Memory requested:2048 bytes
+Pages needed for request:8
+Evict page called, seeking page to evict.
+Offset 0 2 entry access = 1.
+Offset 0 0 entry access = 1.
+Offset 0 3 entry access = 1.
+Offset 0 2 entry access = 0.
+Entry at offsets 0 2 dequeued.
+ENTRY AT OFFSETS 0 2 WRITTEN TO DISK IN FILE ./.swap/0002.bin
+Entry at offsets 0 4 enqueued.
+Evict page called, seeking page to evict.
+Offset 0 3 entry access = 0.
+Entry at offsets 0 3 dequeued.
+ENTRY AT OFFSETS 0 3 WRITTEN TO DISK IN FILE ./.swap/0003.bin
+Entry at offsets 0 5 enqueued.
+Evict page called, seeking page to evict.
+Offset 0 0 entry access = 0.
+Entry at offsets 0 0 dequeued.
+ENTRY AT OFFSETS 0 0 WRITTEN TO DISK IN FILE ./.swap/0000.bin
+Entry at offsets 0 6 enqueued.
+Evict page called, seeking page to evict.
+Offset 0 4 entry access = 1.
+Offset 0 6 entry access = 1.
+Offset 0 5 entry access = 1.
+Offset 0 4 entry access = 0.
+Entry at offsets 0 4 dequeued.
+ENTRY AT OFFSETS 0 4 WRITTEN TO DISK IN FILE ./.swap/0004.bin
+Entry at offsets 0 7 enqueued.
+Evict page called, seeking page to evict.
+Offset 0 5 entry access = 0.
+Entry at offsets 0 5 dequeued.
+ENTRY AT OFFSETS 0 5 WRITTEN TO DISK IN FILE ./.swap/0005.bin
+Entry at offsets 0 8 enqueued.
+Evict page called, seeking page to evict.
+Offset 0 6 entry access = 0.
+Entry at offsets 0 6 dequeued.
+ENTRY AT OFFSETS 0 6 WRITTEN TO DISK IN FILE ./.swap/0006.bin
+Entry at offsets 0 9 enqueued.
+Evict page called, seeking page to evict.
+Offset 0 7 entry access = 1.
+Offset 0 9 entry access = 1.
+Offset 0 8 entry access = 1.
+Offset 0 7 entry access = 0.
+Entry at offsets 0 7 dequeued.
+ENTRY AT OFFSETS 0 7 WRITTEN TO DISK IN FILE ./.swap/0007.bin
+Entry at offsets 0 10 enqueued.
+Evict page called, seeking page to evict.
+Offset 0 8 entry access = 0.
+Entry at offsets 0 8 dequeued.
+ENTRY AT OFFSETS 0 8 WRITTEN TO DISK IN FILE ./.swap/0008.bin
+Entry at offsets 0 11 enqueued.
+Final 'pointer': 0 4 0 0
+
+ACCESS PAGE AT ENTRY OFFSETS 0 0.
+Evict page called, seeking page to evict.
+Offset 0 9 entry access = 0.
+Entry at offsets 0 9 dequeued.
+ENTRY AT OFFSETS 0 9 WRITTEN TO DISK IN FILE ./.swap/0009.bin
+Entry at offsets 0 0 enqueued.
+ENTRY AT OFFSETS 0 0 READ FROM DISK IN FILE ./.swap/0000.bin
+
+Read at X: (312)
+
+ACCESS PAGE AT ENTRY OFFSETS 0 0.
+
+Read at X+sizeof(int): (523)
+
+ACCESS PAGE AT ENTRY OFFSETS 0 2.
+Evict page called, seeking page to evict.
+Offset 0 10 entry access = 1.
+Offset 0 0 entry access = 1.
+Offset 0 11 entry access = 1.
+Offset 0 10 entry access = 0.
+Entry at offsets 0 10 dequeued.
+ENTRY AT OFFSETS 0 10 WRITTEN TO DISK IN FILE ./.swap/0010.bin
+Entry at offsets 0 2 enqueued.
+ENTRY AT OFFSETS 0 2 READ FROM DISK IN FILE ./.swap/0002.bin
+
+Read at X+PAGE_SIZE*2 (third x page): (432)
+
+Free X (4 pages)
+
+PM_FREE() CALLED
+Freeing data at virtual address ptr:0 0 0 0
+Offsets: 0 0
+Entry at offsets 0 0 dequeued.
+Entry at offsets 0 1 on disk, file deleted.
+Entry at offsets 0 2 dequeued.
+Entry at offsets 0 3 on disk, file deleted.
+
+Free Z (8 pages)
+
+PM_FREE() CALLED
+Freeing data at virtual address ptr:0 4 0 0
+Offsets: 0 4
+Entry at offsets 0 4 on disk, file deleted.
+Entry at offsets 0 5 on disk, file deleted.
+Entry at offsets 0 6 on disk, file deleted.
+Entry at offsets 0 7 on disk, file deleted.
+Entry at offsets 0 8 on disk, file deleted.
+Entry at offsets 0 9 on disk, file deleted.
+Entry at offsets 0 10 on disk, file deleted.
+Entry at offsets 0 11 dequeued.
