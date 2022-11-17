@@ -1,3 +1,16 @@
+"""
+Daniel Gonzalez
+CS5100
+Fall 2022
+Final Project - Blackjack Model
+
+"""
+
+# TODO: Code is a little haphazard in places, clean up logic
+# TODO: Need more comments and documentation
+# TODO: Implement "Walk" action, ie player stops playing, and will no longer be playing
+# TODO: Agent is not part of the game model, should be moved out of this file in the future
+
 import random
 
 class Deck:
@@ -19,6 +32,7 @@ class Actions:
 
     insurance = "insurance" # double the bet, if dealer has blackjack immediately get it back, otherwise play with this bet
     surrender = "surrender" # get half your bet back before the game continues
+    next = "next" # don't purchase insurance, don't surrender, just next turn
 
     split = "split"
     hit = "hit"
@@ -51,6 +65,10 @@ class ManualAgent(Agent):
                 return Actions.double_down
             elif choice == 'in':
                 return Actions.insurance
+            elif choice == "ne":
+                return Actions.next
+            elif choice == "su":
+                return Actions.surrender
             elif choice == 'hi':
                 return Actions.hit
             elif choice == 'st':
@@ -71,11 +89,6 @@ class GameState:
             for i in range(len(self.players)):
                 self._bet(i)
 
-
-            """for player in self.players:
-                player.bet()
-                for i in range(2):
-                    player.hit()"""
         else:
             self.current_player = copy.current_player
             self.players = []
@@ -83,9 +96,15 @@ class GameState:
                 self.players.append(Player(copy=player))
 
     def __str__(self):
-        str = ""
+        str = "Current Player: " + self.current_player.__str__() + "\n"
+
         for player in self.players:
-            if player.is_playing:
+            if player.is_dealer:
+                str += "Dealer:\n" + player.__str__() + "\n"
+            else:
+                str += "Player:\n" + player.__str__() + "\n"
+
+            """if player.is_playing:
                 if player.is_dealer:
                     str += "Dealer:"
                 else:
@@ -96,21 +115,25 @@ class GameState:
                     for card in hand.cards:
                         str += card + " "
                     str += "]"
-                    str += "\n"
+                    str += "\n"""
         return str
 
 
     def generate_successor(self, action, player_index):
 
         next_state = GameState(copy=self)
-        """elif action == Actions.insurance:
-            next_state._insurance(player_index)
-        elif action == Actions.walk:
-            next_state._walk(player_index)
-        elif action == Actions.surrender:
-            next_state._surrender(player_index)"""
+
+        '''elif action == Actions.walk:
+            next_state._walk(player_index)'''
+
         if action == Actions.bet:
             next_state._bet(player_index)
+        elif action == Actions.insurance:
+            next_state._insurance(player_index)
+        elif action == Actions.surrender:
+            next_state._surrender(player_index)
+        elif action == Actions.next:
+            next_state._next(player_index)
         elif action == Actions.split:
             next_state._split(player_index)
         elif action == Actions.hit:
@@ -121,12 +144,6 @@ class GameState:
             next_state._double_down(player_index)
 
         return next_state
-
-
-
-
-
-
 
     def get_legal_actions(self, player_index):
         actions = []
@@ -141,9 +158,28 @@ class GameState:
             return actions
 
         # gotta figure out how to buy insurance...
-        # gotta figure out how to know their current hand isn't standing...
+        #if
+
+        # This means they are standing
+        # len() of hands > 0 but not using any hand
         if player.currentHand is None:
             return actions
+
+        #insurance only available if dealer has not flipped their card yet, AND dealer has card value >= 10
+        if self.players[-1].is_dealer \
+        and not self.players[-1].flipped \
+        and self.players[-1].hands[0].value(0) > 9:
+            # insurance action for dealer just flips the card and checks for blackjack
+            # so dealer can always do insurance
+            # player can only purchase insurance if they have enough money
+            if player.is_dealer or player.wallet >= player.hands[0].bet:
+                actions.append(Actions.insurance)
+            # player can surrender as well
+            if not player.is_dealer:
+                actions.append(Actions.surrender)
+                actions.append(Actions.next)
+            return actions
+
 
         if player.hands[player.currentHand].splittable > 0 and not player.is_dealer:
             actions.append(Actions.split)
@@ -156,22 +192,78 @@ class GameState:
 
         return actions
 
-    def next_player(self, loop = False):
-        if self.current_player >= len(self.players) - 1 and loop:
-            self.current_player = 0
-        elif self.current_player >= len(self.players) - 1:
-            print("Round over")
+    def next_player(self):
+
+        if self.current_player >= len(self.players) - 1:
+            print("Round over, final state:\n", self)
             self._settle() #TODO: game over, i just dont know what to do yet
         else:
             self.current_player += 1
+            if not self.players[self.current_player].is_playing:
+                self.next_player()
 
     def _bet(self, player_index):
         if Actions.bet not in self.get_legal_actions(player_index):
             print("Invalid action", player_index, self.get_legal_actions(player_index))
             return
         self.players[player_index].bet(Actions.default_bet)
-        for i in range(2):
-            self.players[player_index].hit()
+        '''for i in range(2):
+            self.players[player_index].hit()'''
+
+    def _insurance(self, player_index):
+        if Actions.insurance not in self.get_legal_actions(player_index):
+            print("Invalid action")
+            return
+
+        # logically, a little messy, but it gets the job done for now
+        player = self.players[player_index]
+        if player.is_dealer:
+            player.flipped = True
+            if player.hands[0].value() == 21:
+
+                for player in self.players:
+                    if player.insurance > 0:
+                        player.wallet += player.insurance * 2
+                        player.hands[0].bet = 0
+                        player.insurance = 0
+                    else:
+                        player.hands[0].bet += player.insurance
+                        player.insurance = 0
+                self._settle()
+            else:
+                for player in self.players:
+                    player.hands[0].bet += player.insurance
+                    player.insurance = 0
+
+                self.current_player = 0
+                if not self.players[self.current_player].is_playing:
+                    self.next_player()
+        else:
+            player.insurance = player.hands[0].bet
+            player.wallet -= player.insurance
+            self.current_player += 1
+
+    def _surrender(self, player_index):
+        if Actions.surrender not in self.get_legal_actions(player_index):
+            print("Invalid action")
+            return
+
+        player = self.players[player_index]
+        player.wallet += (player.hands[0].bet/2)
+        player.hands[0].bet = 0
+        player.is_playing = False
+        self.current_player += 1 #should not be the dealer, so this should be fine
+
+    def _next(self, player_index):
+        if Actions.next not in self.get_legal_actions(player_index):
+            print("Invalid action")
+            return
+
+        # this first branch should never happen, but just in case
+        if self.current_player == len(self.players):
+            self.current_player = 0
+        else:
+            self.current_player += 1
 
     def _hit(self, player_index):
         if Actions.hit not in self.get_legal_actions(player_index):
@@ -223,10 +315,12 @@ class GameState:
                     elif hand.value() == dealerValue:
                         player.wallet += hand.bet
                 player.hands = []
+                player.insurance = 0
                 player.is_playing = True
             else:
                 player.hands = []
                 player.is_playing = True
+                player.flipped = False
                 self._bet(-1)
         self.current_player = 0
 
@@ -235,27 +329,47 @@ class GameState:
 class Player:
 
     def __init__(self, is_dealer = False, wallet = 100, copy = None):
+
         if copy is None:
             self.wallet = wallet
             self.is_dealer = is_dealer
+            self.flipped = not is_dealer
+            self.insurance = 0
             self.is_playing = True
             self.currentHand = None
             self.hands = []
+
         else:
             self.wallet = copy.wallet
             self.is_dealer = copy.is_dealer
+            self.flipped = copy.flipped
+            self.insurance = copy.insurance
             self.is_playing = copy.is_playing
             self.currentHand = copy.currentHand
             self.hands = []
             for hand in copy.hands:
                 self.hands.append(Hand(copy=hand))
 
+    def __str__(self):
+        str = "Wallet: " + self.wallet.__str__() + "\n"
+        str += "Insurance: " + self.insurance.__str__() + "\n"
+        str += "Playing: " + self.is_playing.__str__() + "\n"
+        for hand in self.hands:
+            str += "Hand:\n"
+            str += hand.__str__() + "\n"
+
+        return str
+
+
     def _next_hand(self):
         if self.currentHand < len(self.hands) - 1:
             self.currentHand += 1
         else:
             self.currentHand = None
+    def peek(self):
+        card = self.hands[0].cards[0]
 
+        return card == "A" or card == "J" or card == "K" or card == "Q" or card == "10"
     def bet(self, amount = 10):
         if self.is_dealer:
             self.hands = [Hand(0, 0)]
@@ -295,46 +409,80 @@ class Hand:
         if copy is None:
             self.cards = []
             self.bet = bet
-            self.splittable = splittable
+            self.cards.append("1")
+            self.cards.append("1")
+            '''for i in range(2):
+                self.hit()'''
+            if self.cards[0] == self.cards[1]:
+                self.splittable = splittable
+            else:
+                self.splittable = 0
         else:
             self.bet = copy.bet
             self.splittable = copy.splittable
             self.cards = []
             for card in copy.cards:
                 self.cards.append(card)
+    def __str__(self):
+        str = "Bet: " + self.bet.__str__() + "  |  "
+        str += "Value: " + self.value().__str__() + "  |  "
+        str += "Split: " + self.splittable.__str__() + " | "
+        str += "["
+        for card in self.cards:
+            str += card + " "
+        str += "]"
+        return str
 
     def split(self):
-        if len(self.cards) > 0:
+        if len(self.cards) > 0 :
             self.cards = [self.cards[0]]
-            new_hand = Hand(self.bet, self.splittable-1)
-            new_hand.cards.append(self.cards[0])
+            self.splittable -= 1
+            new_hand = Hand(copy=self)
+            new_hand.hit()
+            self.hit()
+            if not self.cards[0] == self.cards[1]:
+                self.splittable = 0
+            if not new_hand.cards[0] == new_hand.cards[1]:
+                new_hand.splittable = 0
             return new_hand
 
     def hit(self):
         self.cards.append(Deck().draw())
+        if self.splittable > 0 and len(self.cards) > 2:
+            self.splittable = 0
 
-    def value(self):
-        value = 0
-        ace = False
-        for card in self.cards:
-            if card == "A":
-                ace = True
-                value +=1
-            elif card == "J" or card == "K" or card == "Q":
+    def value(self, cardIndex = None):
+        if cardIndex == None:
+            value = 0
+            ace = False
+            for card in self.cards:
+                if card == "A":
+                    ace = True
+                    value +=1
+                elif card == "J" or card == "K" or card == "Q":
+                    value += 10
+                else:
+                    value += int(card)
+
+            if ace and value <= 11:
                 value += 10
+
+            return value
+        else:
+            card = self.cards[cardIndex]
+            if card == "A":
+                return 11
+            if card == "J" or card == "K" or card == "Q":
+                return 10
             else:
-                value += int(card)
-
-        if ace and value <= 10:
-            value += 10
-
-        return value
+                return int(card)
 
 def main():
     # player, dealer
     agents = [ManualAgent(0), ManualAgent(1)]
     game = GameState(1)
-    while game.current_player < 2:
+    # just trying to test it...
+    while True:
         game = game.generate_successor(agents[game.current_player].get_action(game), game.current_player)   #agents[game.current_player].get_action(game)
 
 
