@@ -152,12 +152,11 @@ class ExpectimaxAgent(Agent):
 
     def maxValue(self, state, depth, index):
         actions = state.get_legal_actions(index)
-        # shouldn't reach this but just in case
-        if index == self.index and Actions.walk in actions:
-            depth -= 1
 
         if self.terminalTest(state, depth):
             return self.utility(state)
+
+        depth -= 1
 
         valueFunc = self.minValue
 
@@ -178,9 +177,7 @@ class ExpectimaxAgent(Agent):
 
     def minValue(self, state, depth, index):
         actions = state.get_legal_actions(index)
-        #shouldn't reach this but just in case
-        if index == self.index and Actions.walk in actions:
-            depth -= 1
+
         if self.terminalTest(state, depth):
             return self.utility(state)
 
@@ -263,16 +260,24 @@ class GameState:
         states = []
 
         if action not in self.get_legal_actions(player_index):
-            return states
+            return [GameState(copy=self)]
 
         if action == Actions.bet:
+            face_cards = ["A", "J", "K", "Q", "10"]
             for card1 in Deck().cards:
                 for card2 in Deck().cards:
+                    # dealer only has one card if it starts with a face card
+                    if self.players[player_index].is_dealer and card1 in face_cards:
+                        cards = [card1]
+                    else:
+                        cards = [card1, card2]
                     # when betting, every combination of cards is a successor...
-                    hand = Hand(cards=[card1,card2])
+                    hand = Hand(cards=cards)
                     next_state = GameState(copy=self)
                     next_state._bet(player_index)
                     hand.bet = next_state.players[player_index].hands[0].bet
+                    if self.players[player_index].is_dealer:
+                        hand.splittable = 0
                     # set cards of that player to this new hand
                     next_state.players[player_index].hands = [hand]
                     states.append(next_state)
@@ -283,9 +288,16 @@ class GameState:
             states.append(next_state)
 
         elif action == Actions.insurance:
-            next_state = GameState(copy=self)
-            next_state._insurance(player_index)
-            states.append(next_state)
+            if not self.players[player_index].is_dealer:
+                next_state = GameState(copy=self)
+                next_state._insurance(player_index)
+                states.append(next_state)
+            else:
+                for card in Deck().cards:
+                    next_state = GameState(copy=self)
+                    next_state._insurance(player_index, card=card)
+                    # Every combination of face_card + card in the deck
+                    states.append(next_state)
 
         elif action == Actions.surrender:
             next_state = GameState(copy=self)
@@ -449,7 +461,7 @@ class GameState:
         self.next_player()
         self.num_players -= 1
 
-    def _insurance(self, player_index):
+    def _insurance(self, player_index, card = None):
         if Actions.insurance not in self.get_legal_actions(player_index):
             print("Invalid action")
             return
@@ -458,6 +470,7 @@ class GameState:
         player = self.players[player_index]
         if player.is_dealer:
             player.flipped = True
+            player.hit(card=card)
             if player.hands[0].value() == 21:
 
                 for player in self.players:
@@ -543,7 +556,7 @@ class GameState:
     def _settle(self):
         # all situations only apply to hands under 21 (ie they did not bust)
         # if hand is under dealer and 21, lose entire bet
-        # if hand is above dealer or 21, get bet back, and earned amount of bet
+        # if hand is above dealer or == 21, get bet back, and earned amount of bet
         # if hand is equal to dealer, get bet back
         # if dealer busts, every hand that did not bust gets bet back and earned amount of bet
         dealerValue = self.players[-1].hands[0].value()
@@ -621,6 +634,9 @@ class Player:
     def bet(self, amount = 10):
         if self.is_dealer:
             self.hands = [Hand(0, 0)]
+            # Just make it one card if they have a potential blackjack
+            if self.peek():
+                self.hands[0].cards = [self.hands[0].cards[0]]
             self.currentHand = 0
 
         elif self.wallet >= amount:
@@ -669,11 +685,11 @@ class Hand:
                     self.cards.append(Deck().draw())
             else:
                 self.cards = cards
-
-            if self.cards[0] == self.cards[1]:
-                self.splittable = splittable
-            else:
-                self.splittable = 0
+            if len(self.cards) > 1:
+                if self.cards[0] == self.cards[1]:
+                    self.splittable = splittable
+                else:
+                    self.splittable = 0
         else:
             self.bet = copy.bet
             self.splittable = copy.splittable
