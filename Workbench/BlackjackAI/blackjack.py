@@ -8,7 +8,6 @@ Final Project - Blackjack Model
 
 # TODO: Code is a little haphazard in places, clean up logic
 # TODO: Need more comments and documentation
-# TODO: Implement "Walk" action, ie player stops playing, and will no longer be playing
 # TODO: Agent is not part of the game model, should be moved out of this file in the future
 
 
@@ -23,12 +22,13 @@ If insurance, it can be either the dealer had blackjack and the game is over, th
 """
 
 import random
+from math import log
+from math import sqrt
 
 class Deck:
 
     def __init__(self):
         self.cards = ["A", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "K", "Q"]
-        #random.shuffle(self.cards)
 
     def draw(self):
         # deck has infinite cards, but in the future worth considering
@@ -55,6 +55,17 @@ class Agent:
 
     def __init__(self, index):
         self.index = index
+        self.start_cash = 100
+        self.goal_earnings = self.start_cash + Actions.default_bet * 3
+        self.action_counts = {Actions.bet: 0,
+                              Actions. walk: 0,
+                              Actions.insurance: 0,
+                              Actions.surrender: 0,
+                              Actions.next: 0,
+                              Actions.split: 0,
+                              Actions.hit: 0,
+                              Actions.stand: 0,
+                              Actions.double_down: 0}
 
     def get_action(self, state):
         print("Get an action!")
@@ -99,15 +110,19 @@ class ManualAgent(Agent):
             else:
                 choice = input("Bad input, try again: ")
 
-        print("Chosen action:", action)
+        #print("MANUAL chosen action:", action)
+        self.action_counts[action] += 1
         return action
 
 class DealerAgent(Agent):
 
+    def __str__(self):
+        return "DealerAgent"
+
     def get_action(self, state):
 
-        print("Current state:", state)
-        print("Available actions:", state.get_legal_actions(self.index))
+        #print("Current state:", state)
+        #print("Available actions:", state.get_legal_actions(self.index))
         action = None
         if Actions.insurance in state.get_legal_actions(self.index):
             action = Actions.insurance
@@ -117,85 +132,102 @@ class DealerAgent(Agent):
             action = Actions.hit
         else:
             action = Actions.stand
-        print("Chosen action:", action)
+        #print("DEALER chosen action:", action)
+        self.action_counts[action] += 1
         return action
 
 class ExpectimaxAgent(Agent):
 
-    #TODO: How to implement depth?
-    #Starting to think depth should just go down per turn
-    #So depth of 5 would be 5 moves, regardless of when/where/who
-    #Evaluate based on current bets, potential earnings, hands, etc
-
     def __init__(self, index, depth):
         Agent.__init__(self, index)
         self.depth = depth
-        self.goal_earnings = Actions.default_bet * 5
-        self.start_cash = 100
+
+    def __str__(self):
+        return "ExpectimaxAgent"
 
     def get_action(self, state):
         actions = state.get_legal_actions(self.index)
+
+        if Actions.walk in actions:
+            if state.players[self.index].wallet >= self.goal_earnings or Actions.bet not in actions:
+                return Actions.walk
+            else:
+                return Actions.bet
+
         argmax = actions[0]
         max = -9999999
-        valueFunc = self.minValue
-
+        actionValues = {}
         for action in actions:
-            result = state.generate_successor(self.index, action)
-            nextAgent = result.current_player
-            if nextAgent == self.index:
-                valueFunc = self.maxValue
-            value = valueFunc(result, self.depth, nextAgent)
-            if value > max:
-                max = value
+            v = 0
+            next_states = state.generate_successors(action, self.index)
+            probability = 1 / len(next_states)  # uniform probability
+            for next_state in next_states:
+                next_agent = next_state.current_player
+                if next_agent == self.index:
+                    valueFunc = self.maxValue
+                else:
+                    valueFunc = self.minValue
+                v += probability * valueFunc(next_state, self.depth, next_agent)
+            if v > max:
+                max = v
                 argmax = action
+            actionValues[action] = v
+
+        #print("Evaluating state:", state, "\nActions:", actionValues, "\nChosen action:", argmax)
+        #print("EXPECTIMAX chosen action:", argmax)
+        self.action_counts[argmax] += 1
+        return argmax
 
 
     def maxValue(self, state, depth, index):
-        actions = state.get_legal_actions(index)
 
         if self.terminalTest(state, depth):
             return self.utility(state)
 
         depth -= 1
 
-        valueFunc = self.minValue
-
         actions = state.get_legal_actions(index)
         v_max = 0
+        valueFunc = None
 
         for action in actions:
             v = 0
             next_states = state.generate_successors(action, index)
-            probability = 1/next_states # uniform probability
+            probability = 1/len(next_states) # uniform probability
             for next_state in next_states:
                 next_agent = next_state.current_player
                 if next_agent == self.index:
                     valueFunc = self.maxValue
-                v += probability * valueFunc(next_state, next_agent, depth)
+                else:
+                    valueFunc = self.minValue
+                v += probability * valueFunc(next_state, depth, next_agent)
             v_max = max(v_max, v)
         return v_max
 
     def minValue(self, state, depth, index):
-        actions = state.get_legal_actions(index)
+
 
         if self.terminalTest(state, depth):
             return self.utility(state)
 
-        valueFunc = self.maxValue
-        d = depth
-        v_min = 0
+        v_min = 999999
+        depth -= 1
+        valueFunc = None
 
+        actions = state.get_legal_actions(index)
         for action in actions:
             v = 0
             next_states = state.generate_successors(action, index)
-            probability = 1 / next_states  # uniform probability
+            probability = 1 / len(next_states)  # uniform probability
             for next_state in next_states:
 
                 next_agent = next_state.current_player
-                if not next_agent == self.index:
+                if next_agent == self.index:
+                    valueFunc = self.maxValue
+                else:
                     valueFunc = self.minValue
 
-                v += probability * valueFunc(next_state, next_agent, depth)
+                v += probability * valueFunc(next_state, depth, next_agent)
             v_min = min(v_min, v)
         return v_min
 
@@ -203,24 +235,240 @@ class ExpectimaxAgent(Agent):
         return (depth ==0 or state.is_terminal(self.index))
 
     def utility(self, state):
-        self.evaluationFunction(state)
+        return self.evaluationFunction(state)
 
     def evaluationFunction(self, state):
+
+
         eval = 0
         player = state.players[self.index]
         dealer = state.players[-1]
+
+        round_weight = 8
+        earnings_weight = 2
+        goalDist_weight = 1
+
+        # total earned from entire game
         current_earnings = player.wallet - self.start_cash
-        eval += (current_earnings - self.goal_earnings)
+        goalDist = player.wallet - self.goal_earnings
+
+        round_loss = 0
         for hand in player.hands:
-            eval + hand.bet/2
-            if hand.value() <= 21:
-                eval += hand.value()
-            else:
-                eval -= hand.value()
+            bet = hand.bet
+            val = hand.value()
+
+            # Lost the bet!
+            if val > 21 or (len(dealer.hands) > 0 and dealer.hands[0].value() > val):
+                bet = -bet
+            # Agent has a chance to win
+            elif val < 21:
+                # The closer to 21, the better this will be
+                bet /= (21 - val)
+            round_loss += bet
         if state.is_terminal(self.index):
-            eval = abs(eval) * 10
+            goalDist_weight = 10
+
+
+        round_loss *= round_weight
+        current_earnings *= earnings_weight
+        goalDist *= goalDist_weight
+
+        eval += round_loss + current_earnings + goalDist
 
         return eval
+
+class MCTSAgent(Agent):
+
+    def __init__(self, index):
+        Agent.__init__(self, index)
+        self.tree = {}
+        # Eventually it would be useful to parameterize these
+        # but for now they are just hard-coded lol
+        self.depth = 10
+        self.rollout_depth = 4
+        self.c = 1.4
+        self.gamma = .7
+        self.start_cash = 100
+        self.goal = self.start_cash + (Actions.default_bet * 3)
+        self.num_simulations = 500
+
+    def __str__(self):
+        return "MCTSAgent"
+
+    def get_action(self, state):
+        actions = state.get_legal_actions(self.index)
+        # Separate rules for walk and bet
+        if Actions.walk in actions:
+            if state.players[self.index].wallet >= self.goal or Actions.bet not in actions:
+                action = Actions.walk
+            else:
+                action = Actions.bet
+        else:
+            action = self.mcts(state)
+
+        #print("MCTS chosen action:", action)
+        self.action_counts[action] += 1
+        return action
+
+    def mcts(self, state):
+        self.tree = {}
+        root = Node(state)
+        self.root = state
+        #print("Simulating starting with ", state)
+        for i in range(self.num_simulations):
+            self.simulate(root, self.depth)
+
+        max = -999999
+        argmax = list(root.actions.keys())[0]
+        for action in root.actions:
+            if root.qvalue(action) >= max:
+                argmax = action
+                max = root.qvalue(action)
+        #print("Final action values:", root.actions, "in state:", state, "Chose action:", argmax)
+        return argmax
+
+    def simulate(self, node, depth):
+        if depth == 0 or node.state.is_terminal(self.index):
+            return 0
+        if node.state not in self.tree:
+            #print("ROLLOUT FROM STATE:\n", node.state)
+            self.tree[node.state] = node
+            return self.rollout(node.state, self.rollout_depth)
+
+        # Get node associated with this state
+        node = self.tree[node.state]
+        action = self.choose_action(node)
+        next_state = node.state.generate_successor(action, node.state.current_player)
+        next_node = Node(next_state)
+
+        # q = r + y * SIMULATE(s', d-1)
+        q = self.reward(node.state, action) + (self.gamma * self.simulate(next_node, depth-1))
+
+        # N(s, a) = N(s, a) + 1
+        # N(s) = N(s) + 1
+        node.increase_action_visits(action)
+        node.increase_state_visits()
+        node.update_qvalue(action, q)
+        return q
+
+    def choose_action(self, node):
+        player_index = node.state.current_player
+        actions = list(node.actions.keys())
+        #print("Choosing actions for simulated state", node.state, "ACTIONS:", node.actions)
+        values = {}
+
+        for action in actions:
+            # Q(s,a) + c * sqrt( ln(N(s))/N(s,a))
+            uct = node.qvalue(action) + ( self.c * sqrt( log(node.state_visits()) / node.action_visits(action) ) )
+            values[action] = uct
+
+        if player_index == self.index:
+            arg_m = max(values, key=values.get)
+        else:
+            arg_m = min(values, key=values.get)
+
+
+        #print("Chose action for simulation:", arg_m)
+        return arg_m
+
+    def rollout(self, state, depth):
+        #print("ROLLOUT PATH:\nDEPTH:",depth,"STATE:\n", state)
+        if depth == 0 or state.is_terminal(self.index):
+            return 0
+        action = self.policyAction(state)
+        next_state = state.generate_successor(action, state.current_player)
+        return self.reward(state, action) + self.gamma * self.rollout(next_state, depth-1)
+
+    def policyAction(self, state):
+        actions = state.get_legal_actions(state.current_player)
+        action = actions[0]
+        # Current player is dealer
+        if state.players[state.current_player].is_dealer:
+            if Actions.insurance in actions:
+                action = Actions.insurance
+            elif Actions.bet in actions:
+                action = Actions.bet
+            elif state.get_hand_value(state.current_player) < 17:
+                action = Actions.hit
+            else:
+                action = Actions.stand
+
+        # Current player is agent
+        elif state.current_player == self.index:
+            if Actions.insurance in actions:
+                dealer_card = state.players[-1].hands[0].value(0)
+                if dealer_card == 11:
+                    action = Actions.surrender
+                else:
+                    action = Actions.insurance
+            elif Actions.walk in actions:
+                # Walk away when agent has won more than they started with
+                if(state.players[self.index].wallet >= self.goal) or Actions.bet not in actions:
+                    action = Actions.walk
+                else:
+                    action = Actions.bet
+            elif state.get_hand_value(self.index) < 17 and Actions.hit in actions:
+                #print("Hellooooo Megan!")
+                action = Actions.hit
+            elif Actions.stand in actions:
+                action = Actions.stand
+            else:
+                action = actions[0]
+
+        # Current player is some other player (does not affect agent score)
+        else:
+            action = actions[0]
+        #print("Policy action:", action, "actions:", actions)
+        return action
+
+    def reward(self, state, action):
+        next_state = GameState(copy=state).generate_successor(action, state.current_player)
+        player = state.players[self.index]
+        next_state_player = next_state.players[self.index]
+        if(len(next_state_player.hands) > 0 and len(next_state.players[-1].hands) > 0):
+            next_state._settle()
+        r = next_state_player.wallet - player.wallet
+        return r
+
+
+class Node:
+
+    def __init__(self, state):
+        self.state = state
+        self.visits = 1 # if this node has been created, that means it has been visited
+        self.actions = {}
+        for action in state.get_legal_actions(state.current_player):
+            visits = 1
+            Qvalue = 999999  # unexplored nodes begin at infinity
+            self.actions[action] = (visits, Qvalue)
+
+    def qvalue(self, action):
+        return self.actions[action][1]
+
+    def set_all_qvalue(self, value):
+        for action in self.actions:
+            self.actions[action] = (self.actions[action][0], value)
+
+    def update_qvalue(self, action, q):
+        old_q = self.actions[action][1]
+        new_q = old_q + ( (q - old_q) / self.actions[action][0] )
+        self.actions[action] = (self.actions[action][0], new_q)
+
+
+    def state_visits(self):
+        return self.visits
+
+    def increase_state_visits(self):
+        self.visits +=1
+
+    def action_visits(self, action):
+        return self.actions[action][0]
+
+    def increase_action_visits(self, action):
+        self.actions[action] = (self.actions[action][0]+1, self.actions[action][1])
+
+
+
 
 
 
@@ -228,6 +476,7 @@ class GameState:
 
     def __init__(self, num_players = 1, copy = None):
         if copy is None:
+            self.rounds = 0
             self.num_players = num_players
             self.players = [Player(False), Player(True)]
             self.current_player = 0
@@ -239,11 +488,32 @@ class GameState:
                 self._bet(i)
 
         else:
+            self.rounds = copy.rounds
             self.num_players = copy.num_players
             self.current_player = copy.current_player
             self.players = []
             for player in copy.players:
                 self.players.append(Player(copy=player))
+
+    def __eq__(self, other):
+        # First check number of players
+        if self.num_players != other.num_players \
+        or len(self.players) != len(other.players):
+            return False
+        # Check that each player is the same
+        for i in range(len(self.players)):
+            if self.players[i] != other.players[i]:
+                return False
+        # Check that we are on the same turn
+        return (self.current_player == other.current_player)
+
+    def __hash__(self):
+        hash_val = (len(self.players), self.num_players, self.current_player)
+        for player in self.players:
+            hash_val = hash_val + (player,)
+
+        return hash(hash_val)
+
 
     def __str__(self):
         str = "Current Player: " + self.current_player.__str__() + "\n"
@@ -367,9 +637,11 @@ class GameState:
 
     def get_legal_actions(self, player_index):
         actions = []
+        if(len(self.players) <= player_index):
+            print(player_index)
         player = self.players[player_index]
         if self.num_players < 1:
-            return actions # no one can do anything
+            return [Actions.next] # no one can do anything
         if not player.is_playing:
             return [Actions.next]
 
@@ -423,7 +695,7 @@ class GameState:
         return len(self.players)
 
     def is_terminal(self, player_index):
-        return not self.players[player_index].is_playing
+        return (not self.players[player_index].is_playing) or self.num_players < 1
 
     def get_hand_value(self, player_index):
         player = self.players[player_index]
@@ -436,7 +708,7 @@ class GameState:
     def next_player(self):
 
         if self.current_player >= len(self.players) - 1:
-            print("Round over, final state:\n", self)
+            #print("Round over, final state:\n", self)
             self._settle()
         else:
             self.current_player += 1
@@ -517,7 +789,7 @@ class GameState:
             return
 
         # this first branch should never happen, but just in case
-        if self.current_player == len(self.players):
+        if self.current_player >= len(self.players)-1:
             self.current_player = 0
         else:
             self.current_player += 1
@@ -559,6 +831,7 @@ class GameState:
         # if hand is above dealer or == 21, get bet back, and earned amount of bet
         # if hand is equal to dealer, get bet back
         # if dealer busts, every hand that did not bust gets bet back and earned amount of bet
+        self.rounds += 1
         dealerValue = self.players[-1].hands[0].value()
         for player in self.players:
             if not player.is_playing:
@@ -619,6 +892,31 @@ class Player:
 
         return str
 
+    def __hash__(self):
+        values = []
+        for hand in self.hands:
+            values.append(hand.value())
+        while len(values) < 4:
+            values.append(0)
+
+        return hash((self.is_dealer, self.flipped, self.insurance, self.is_playing,
+         self.currentHand, values[0],values[1],values[2],values[3]))
+
+    def __eq__(self, other):
+        if (len(self.hands) != len(other.hands)):
+            return False
+
+        for i in range(len(self.hands)):
+            if self.hands[i].value() != other.hands[i].value():
+                return False
+
+
+        return (self.is_dealer == other.is_dealer
+        and self.flipped == other.flipped
+        and self.insurance == other.insurance
+        and self.is_playing == other.is_playing
+        and self.currentHand == other.currentHand)
+
 
     def _next_hand(self):
         if self.currentHand < len(self.hands) - 1:
@@ -673,7 +971,7 @@ class Player:
 
 class Hand:
 
-    def __init__(self, bet = 0, splittable = 2, copy = None, cards = None): #TODO: CURRENTLY ._BET() IN GENERATESUCCESSORS DOES NOT MAKE THE HAND SPLITTABLE EVEN THO IT IS - THUS, WE SHOULD CREATE A NEW HAND FOR THE PLAYER AND SET IT TO THAT
+    def __init__(self, bet = 0, splittable = 2, copy = None, cards = None):
         if copy is None:
             self.bet = bet
             #self.cards.append("A")
@@ -756,12 +1054,23 @@ class Hand:
 
 
 def main():
-    # player, dealer
-    agents = [ManualAgent(0), ManualAgent(1), ManualAgent(2)]
-    game = GameState(2)
-    # just trying to test it...
-    while game.num_players > 0:
-        game = game.generate_successors(agents[game.current_player].get_action(game), game.current_player)[-1]
+
+    e_agents = [ExpectimaxAgent(0, 2), DealerAgent(1)]
+    m_agents = [MCTSAgent(0), DealerAgent(1)]
+    b_agents = [MCTSAgent(0), ExpectimaxAgent(1, 2), DealerAgent(2)]
+
+    agents = [b_agents, e_agents, m_agents]
+
+    for agent_set in agents:
+        for i in range(5):
+            game = GameState(len(agent_set)-1)
+            while game.num_players > 0:
+                game = game.generate_successor(agent_set[game.current_player].get_action(game), game.current_player)
+
+            for j in range(len(agent_set)-1):
+                print("\nAgent:", agent_set[j], "\nAgent Actions:", agent_set[j].action_counts, "\nPlayer wallet:",game.players[j].wallet, "\nRounds:", game.rounds)
+
+
 
 
 main()
